@@ -190,6 +190,9 @@ def register_tools(mcp: FastMCP) -> None:
                 port_list = sorted({int(p.strip()) for p in ports.split(",") if p.strip()})
             except ValueError:
                 return {"error": f"Invalid port list: {ports}. Use 'top20', 'top100', or '80,443'"}
+            invalid = [p for p in port_list if not (1 <= p <= 65535)]
+            if invalid:
+                return {"error": f"Ports out of range (1-65535): {invalid}"}
 
         # Resolve hostname
         try:
