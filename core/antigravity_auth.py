@@ -392,7 +392,7 @@ def cmd_account_add(args: argparse.Namespace) -> int:
     try:
         client_id = get_client_id()
     except OAuthConfigError as e:
-        logger.error("%s%s", e, f" ({e.hint})" if e.hint else "")
+        logger.error("[%s] %s%s", e.code, e, f" ({e.hint})" if e.hint else "")
         return 1
     client_secret = get_client_secret()
 
@@ -428,6 +428,13 @@ def cmd_account_add(args: argparse.Namespace) -> int:
             try:
                 tokens = refresh_access_token(refresh_token, client_id, client_secret)
             except OAuthError as e:
+                logger.error(
+                    "Token refresh failed [%s]: %s%s",
+                    e.code,
+                    e,
+                    f" ({e.hint})" if e.hint else "",
+                    exc_info=True,
+                )
                 logger.info("Token refresh failed (%s), proceeding with OAuth...", e.code)
             if tokens:
                 new_access = tokens.get("access_token")
