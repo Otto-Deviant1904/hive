@@ -70,8 +70,14 @@ _BLOCK_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         "kills browser/runtime processes (PowerShell Stop-Process)",
     ),
     (
-        re.compile(rf"\bget-process\b[^\n]*{_PROTECTED}[^\n]*\|\s*(?:[^|\n]*\|\s*)?stop-process\b", re.IGNORECASE),
-        "kills browser/runtime processes (PowerShell Get-Process | Stop-Process)",
+        # PowerShell alias: `kill` is an alias for Stop-Process. Catch
+        # `Get-Process chrome | kill` and `kill -Name chrome` spellings.
+        re.compile(rf"\bkill\b[^\n]*{_PROTECTED}", re.IGNORECASE),
+        "kills browser/runtime processes (PowerShell kill alias for Stop-Process)",
+    ),
+    (
+        re.compile(rf"\bget-process\b[^\n]*{_PROTECTED}[^\n]*\|\s*(?:[^|\n]*\|\s*)?(?:stop-process|kill)\b", re.IGNORECASE),
+        "kills browser/runtime processes (PowerShell Get-Process | Stop-Process/kill)",
     ),
     (
         # cmd / Windows: taskkill /IM chrome.exe  (or /F /IM ...)
