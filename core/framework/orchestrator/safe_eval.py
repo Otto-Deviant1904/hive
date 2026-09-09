@@ -239,6 +239,13 @@ class SafeEvalVisitor(ast.NodeVisitor):
         idx = self.visit(node.slice)
         return val[idx]
 
+    def visit_Slice(self, node: ast.Slice) -> slice:
+        # Sequence slicing: x[1:3], x[::2], etc.
+        lower = self.visit(node.lower) if node.lower else None
+        upper = self.visit(node.upper) if node.upper else None
+        step = self.visit(node.step) if node.step else None
+        return slice(lower, upper, step)
+
     def visit_Attribute(self, node: ast.Attribute) -> Any:
         # value.attr
         # STRICT CHECK: No access to private attributes (starting with _)
