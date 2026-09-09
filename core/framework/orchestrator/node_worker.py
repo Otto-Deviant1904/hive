@@ -771,7 +771,12 @@ class NodeWorker:
                     buffer_items[key] = f"[Saved to '{filename}' ({file_size:,} bytes). Use terminal_exec(\"cat {filename}\") to access.]"
                     continue
                 except Exception:
-                    pass
+                    logger.warning(
+                        "Failed to spill buffer key %r to %s; using inline truncation",
+                        key,
+                        file_path,
+                        exc_info=True,
+                    )
 
             buffer_items[key] = val_str[:300] + "..." if len(val_str) > 300 else val_str
 
