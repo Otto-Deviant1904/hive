@@ -13,8 +13,8 @@ Execution system for standalone Hive agents. A standalone agent — single-entry
 
 ## Topology
 
-```
-                     AgentLoader.load(agent_path)
+```text
+                      AgentLoader.load(agent_path)
                                |
                           AgentLoader
                      (loader + public API)
