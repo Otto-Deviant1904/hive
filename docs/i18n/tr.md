@@ -43,7 +43,7 @@
 
 OpenHive, **ajan kolonileri** için sıfır kurulum gerektiren, modelden bağımsız bir çalışma zamanıdır (runtime). Koloni, bir iş sürecini birlikte yürütmek için çalışan uzman ajanlardan oluşan bir gruptur: kalıcı ve müşteriyle temas halinde olan lider olan bir **Queen** (Kraliçe) ile işin gerektirdiği sayıda **worker** (işçi) ajan. Siz sonucu tarif edersiniz; Queen işi kendisi yapar, ardından bu işi güvenilir ve ölçekli biçimde yürütmek için etrafında bir koloni büyütür.
 
-Temeldeki mekanizma **tek bir döngünün birçok döngüyü kontrol etmesidir**. Hive'ın tek bir yürütme ilkeli (execution primitive) vardır: Queen *zaten* bir ajan döngüsüdür ve her işçi onun bir **klonudur** — aynı araçlar, aynı model, kendi görevi. Derlenecek bir graf yok, yazılacak bir orkestrasyon şablon kodu yok. Koloni, paylaşılan bir defter ve kalıcı bir plan aracılığıyla koordine olur; çökme güvenli durum, derin gözlemlenebilirlik ve insan denetimi, her ajanın paylaştığı bu tek ilkele gömülüdür. Nasıl çalıştığını görmek için **[Mimari Genel Bakış](../architecture/README.md)** sayfasına bakın.
+Temeldeki mekanizma **tek bir döngünün birçok döngüyü kontrol etmesidir**. Hive'ın tek bir yürütme ilkesi (execution primitive) vardır: Queen *zaten* bir ajan döngüsüdür ve her işçi onun bir **klonudur** — aynı araçlar, aynı model, kendi görevi. Derlenecek bir graf yok, yazılacak bir orkestrasyon şablon kodu yok. Koloni, paylaşılan bir defter ve kalıcı bir plan aracılığıyla koordine olur; çökme güvenli durum, derin gözlemlenebilirlik ve insan denetimi, her ajanın paylaştığı bu tek ilkele gömülüdür. Nasıl çalıştığını görmek için **[Mimari Genel Bakış](../architecture/README.md)** sayfasına bakın.
 
 ## Özellikler
 
@@ -149,7 +149,7 @@ Oluşturmak istediğiniz ajanı ana ekrandaki giriş kutusuna yazın. Queen size
 
 ### Ajanları Çalıştırma
 
-Artık bir ajanı seçerek (mevcut bir ajan veya örnek ajan) çalıştırabilirsiniz. Sol üstteki Çalıştır düğmesine tıklayabilir ya da Queen ajanıyla konuşabilirsiniz; ajan sizin için çalıştırabilir.
+Artık bir ajanı seçerek (mevcut bir ajan veya örnek ajan) çalıştırabilirsiniz. Sol üstteki Çalıştır düğmesine tıklayabilir ya da Queen ajanıyla konuşabilirsiniz; Queen sizin için seçtiğiniz ajanı çalıştırabilir.
 
 <img width="2549" height="1174" alt="Screenshot 2026-03-12 at 9 27 36 PM" src="https://github.com/user-attachments/assets/7c7d30fa-9ceb-4c23-95af-b1caa405547d" />
 
@@ -203,7 +203,7 @@ flowchart LR
 2. **Queen yönetir** → İşin bir birimini kendisi yapar, yolu kanıtlar ve paylaşılan tracker'a kaydeder
 3. **[Sistematize](../key_concepts/improvement.md)** → Kanıtlanmış protokolü bir beceri + oyun kitabına dönüştürür — tekrarlanabilir bir süreç
 4. **[Dağıt](../key_concepts/colony.md)** → `run_worker`, paralel çalışan ve geri bildirimde bulunan [işçi klonları](../key_concepts/worker_agent.md) oluşturur
-5. **Birleştir ve izle** → İşçiler sonuçları tracker'a yazar; Queen SQL ile doğrular, gerçek zamanlı metrikler, bütçe uygulaması ve çökme güvenli devam ettirme ile
+5. **Birleştir ve izle** → İşçiler sonuçları tracker'a yazar; Queen SQL ile doğrular, gerçek zamanlı metrikler, bütçe uygulaması ve çökme güvenli devam ettirme ile çalışır.
 
 ## Belgeler
 
