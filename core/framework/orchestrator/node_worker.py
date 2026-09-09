@@ -760,11 +760,11 @@ class NodeWorker:
                 continue
             val_str = str(value)
             if len(val_str) > 300 and data_dir is not None:
-                data_dir.mkdir(parents=True, exist_ok=True)
                 ext = ".json" if isinstance(value, (dict, list)) else ".txt"
                 filename = f"output_{key}{ext}"
                 file_path = data_dir / filename
                 try:
+                    data_dir.mkdir(parents=True, exist_ok=True)
                     write_content = json.dumps(value, indent=2, ensure_ascii=False) if isinstance(value, (dict, list)) else str(value)
                     file_path.write_text(write_content, encoding="utf-8")
                     file_size = file_path.stat().st_size
