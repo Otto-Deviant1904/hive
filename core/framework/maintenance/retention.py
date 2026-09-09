@@ -659,10 +659,13 @@ def deep_clean_worker(
     report = TargetReport(name="worker_deep_clean", tier=2)
     result_path = wdir / "result.json"
 
+    # Crash-safety: the tombstone is written first, then deletions proceed
+    # one target at a time. The deletion loop below is idempotent, so a
+    # crashed run simply finishes the remaining deletions on the next pass.
+    # We intentionally do NOT short-circuit on tombstone-exists alone: the
+    # old check (tombstone + conversations gone) permanently skipped data/
+    # and stray files if the crash landed between the two iterations.
     tombstone_exists = result_path.exists()
-    already_cleaned = tombstone_exists and not (wdir / "conversations").exists()
-    if already_cleaned:
-        return report
 
     if not tombstone_exists:
         status, summary = _extract_worker_summary(wdir)
