@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 from datetime import UTC
+from pathlib import Path
 from typing import Any
 
 from aiohttp import web
@@ -356,7 +357,11 @@ async def handle_chat(request: web.Request) -> web.Response:
                 # 1000-page PDF is still megabytes of text otherwise).
                 _pdf_bytes = raw_bytes
 
-                def _inspect_pdf() -> tuple[int, list[str]]:
+                def _inspect_pdf(
+                    _pdf_bytes: bytes | None = _pdf_bytes,
+                    pdf_filepath: Path = pdf_filepath,
+                    is_large: bool = is_large,
+                ) -> tuple[int, list[str]]:
                     page_count = 0
                     parts: list[str] = []
                     try:
@@ -470,7 +475,11 @@ async def handle_chat(request: web.Request) -> web.Response:
                 # 100 MB CSV is seconds of loop-stalling work otherwise.
                 _csv_bytes = raw_bytes
 
-                def _parse_csv() -> tuple[int, str | None]:
+                def _parse_csv(
+                    _csv_bytes: bytes | None = _csv_bytes,
+                    csv_filepath: Path = csv_filepath,
+                    csv_filename: str = csv_filename,
+                ) -> tuple[int, str | None]:
                     row_count = 0
                     text_part: str | None = None
                     try:
@@ -538,7 +547,11 @@ async def handle_chat(request: web.Request) -> web.Response:
                 is_large = attachment_size > LARGE_TEXT_THRESHOLD_BYTES
                 _text_bytes = raw_bytes
 
-                def _read_text_attachment() -> tuple[str, int]:
+                def _read_text_attachment(
+                    _text_bytes: bytes | None = _text_bytes,
+                    is_large: bool = is_large,
+                    text_filepath: Path = text_filepath,
+                ) -> tuple[str, int]:
                     if _text_bytes is not None:
                         t = _text_bytes.decode("utf-8", errors="replace")
                         return t, (t.count("\n") + 1 if t else 0)
@@ -629,7 +642,7 @@ async def handle_chat(request: web.Request) -> web.Response:
 
                     _img_bytes = raw_bytes
 
-                    def _probe_dims() -> str:
+                    def _probe_dims(_img_bytes: bytes | None = _img_bytes) -> str:
                         with Image.open(io.BytesIO(_img_bytes)) as im:
                             return f"{im.size[0]}×{im.size[1]}, "
 
