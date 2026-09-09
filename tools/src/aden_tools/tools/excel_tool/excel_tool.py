@@ -474,21 +474,17 @@ def register_tools(mcp: FastMCP) -> None:
             if not query_upper.startswith("SELECT"):
                 return {"error": "Only SELECT queries are allowed for security reasons"}
 
-            # Disallowed keywords
-            disallowed = [
-                "INSERT",
-                "UPDATE",
-                "DELETE",
-                "DROP",
-                "CREATE",
-                "ALTER",
-                "TRUNCATE",
-                "EXEC",
-                "EXECUTE",
-            ]
-            for keyword in disallowed:
-                if keyword in query_upper:
-                    return {"error": f"'{keyword}' is not allowed in queries"}
+            # Disallowed keywords — match whole words only so column names
+            # like created_at (contains CREATE) or updated_at (contains
+            # UPDATE) don't false-positive.
+            import re
+            _write_pattern = re.compile(
+                r"\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|EXEC|EXECUTE)\b",
+                re.IGNORECASE,
+            )
+            match = _write_pattern.search(query)
+            if match:
+                return {"error": f"'{match.group().upper()}' is not allowed in queries"}
 
             # Load workbook
             wb = load_workbook(secure_path, read_only=True, data_only=True)
