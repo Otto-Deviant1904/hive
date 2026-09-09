@@ -608,11 +608,11 @@ for preset_id, preset in sorted(get_presets().items()):
         "PRESET\t{preset_id}\t{provider}\t{model}\t{max_tokens}\t{max_context_tokens}\t{api_key_env_var}\t{api_base}".format(
             preset_id=preset_id,
             provider=preset["provider"],
-            model=preset.get("model", ""),
+            model=preset.get("model", "") or "__EMPTY__",
             max_tokens=preset["max_tokens"],
             max_context_tokens=preset["max_context_tokens"],
-            api_key_env_var=preset.get("api_key_env_var", ""),
-            api_base=preset.get("api_base", ""),
+            api_key_env_var=preset.get("api_key_env_var", "") or "__EMPTY__",
+            api_base=preset.get("api_base", "") or "__EMPTY__",
         )
     )
     for choice in preset.get("model_choices", []):
@@ -631,16 +631,19 @@ for preset_id, preset in sorted(get_presets().items()):
     PRESET_ROWS=""
     PRESET_MODEL_CHOICE_ROWS=""
 
-    while IFS=$'\t' read -r row_type field1 field2 field3 field4 field5 field6 field7; do
-        [ -n "$row_type" ] || continue
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        # Split on tabs, preserving empty fields
+        IFS=$'\t' read -r -a _fields <<< "$line"
+        row_type="${_fields[0]}"
         if [ "$row_type" = "DEFAULT" ]; then
-            MODEL_DEFAULT_ROWS+="${field1}"$'\t'"${field2}"$'\n'
+            MODEL_DEFAULT_ROWS+="${_fields[1]}"$'\t'"${_fields[2]}"$'\n'
         elif [ "$row_type" = "MODEL" ]; then
-            MODEL_CHOICE_ROWS+="${field1}"$'\t'"${field2}"$'\t'"${field3}"$'\t'"${field4}"$'\t'"${field5}"$'\n'
+            MODEL_CHOICE_ROWS+="${_fields[1]}"$'\t'"${_fields[2]}"$'\t'"${_fields[3]}"$'\t'"${_fields[4]}"$'\t'"${_fields[5]}"$'\n'
         elif [ "$row_type" = "PRESET" ]; then
-            PRESET_ROWS+="${field1}"$'\t'"${field2}"$'\t'"${field3}"$'\t'"${field4}"$'\t'"${field5}"$'\t'"${field6}"$'\t'"${field7}"$'\n'
+            PRESET_ROWS+="${_fields[1]}"$'\t'"${_fields[2]}"$'\t'"${_fields[3]}"$'\t'"${_fields[4]}"$'\t'"${_fields[5]}"$'\t'"${_fields[6]}"$'\t'"${_fields[7]}"$'\n'
         elif [ "$row_type" = "PRESET_MODEL" ]; then
-            PRESET_MODEL_CHOICE_ROWS+="${field1}"$'\t'"${field2}"$'\t'"${field3}"$'\t'"${field4}"$'\n'
+            PRESET_MODEL_CHOICE_ROWS+="${_fields[1]}"$'\t'"${_fields[2]}"$'\t'"${_fields[3]}"$'\t'"${_fields[4]}"$'\n'
         fi
     done <<< "$catalog_lines"
 }
@@ -709,16 +712,29 @@ get_model_choice_maxcontexttokens() {
 get_preset_field() {
     local preset_id="$1"
     local field="$2"
-    while IFS=$'\t' read -r row_preset_id row_provider row_model row_max_tokens row_max_context_tokens row_env_var row_api_base; do
-        [ -n "$row_preset_id" ] || continue
-        if [ "$row_preset_id" = "$preset_id" ]; then
+    while IFS=$'\t' read -r -a _fields; do
+        [ -n "${_fields[0]}" ] || continue
+        if [ "${_fields[0]}" = "$preset_id" ]; then
+            # Convert __EMPTY__ sentinel back to empty string
+            _v1="${_fields[1]}"
+            _v2="${_fields[2]}"
+            _v3="${_fields[3]}"
+            _v4="${_fields[4]}"
+            _v5="${_fields[5]}"
+            _v6="${_fields[6]}"
+            [ "$_v1" = "__EMPTY__" ] && _v1=""
+            [ "$_v2" = "__EMPTY__" ] && _v2=""
+            [ "$_v3" = "__EMPTY__" ] && _v3=""
+            [ "$_v4" = "__EMPTY__" ] && _v4=""
+            [ "$_v5" = "__EMPTY__" ] && _v5=""
+            [ "$_v6" = "__EMPTY__" ] && _v6=""
             case "$field" in
-                provider) echo "$row_provider" ;;
-                model) echo "$row_model" ;;
-                max_tokens) echo "$row_max_tokens" ;;
-                max_context_tokens) echo "$row_max_context_tokens" ;;
-                api_key_env_var) echo "$row_env_var" ;;
-                api_base) echo "$row_api_base" ;;
+                provider) echo "$_v1" ;;
+                model) echo "$_v2" ;;
+                max_tokens) echo "$_v3" ;;
+                max_context_tokens) echo "$_v4" ;;
+                api_key_env_var) echo "$_v5" ;;
+                api_base) echo "$_v6" ;;
             esac
             return
         fi
