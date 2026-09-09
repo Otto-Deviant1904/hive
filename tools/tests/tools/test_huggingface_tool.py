@@ -286,6 +286,118 @@ class TestHuggingFaceRunInference:
         assert result["error"] == "Model is loading"
         assert result["estimated_time"] == 30.5
 
+    def test_malformed_503_without_loading_payload(self, tool_fns):
+        """503 responses that lack the expected loading payload should NOT be reported as 'loading'."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.headers = {"content-type": "application/json"}
+        mock_resp.json.return_value = {"error": "Backend unavailable", "details": "queue overflow"}
+        mock_resp.text = '{"error": "Backend unavailable", "details": "queue overflow"}'
+        with (
+            patch.dict("os.environ", ENV),
+            patch(
+                "aden_tools.tools.huggingface_tool.huggingface_tool.httpx.post",
+                return_value=mock_resp,
+            ),
+        ):
+            result = tool_fns["huggingface_run_inference"](model_id="some/repo", inputs="Hello")
+
+        assert "error" in result
+        # Must NOT be classified as the "model is loading" condition.
+        assert result["error"] != "Model is loading"
+        assert "503" in result["error"]
+        # Body content should be surfaced.
+        assert "Backend unavailable" in result["error"]
+
+    def test_503_non_json_content_type(self, tool_fns):
+        """503 responses with a non-JSON content-type should surface a clear error."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.headers = {"content-type": "text/html"}
+        mock_resp.text = "<html><body>Service Unavailable</body></html>"
+        # If code accidentally calls .json(), raise to surface the bug.
+        mock_resp.json.side_effect = ValueError("not json")
+        with (
+            patch.dict("os.environ", ENV),
+            patch(
+                "aden_tools.tools.huggingface_tool.huggingface_tool.httpx.post",
+                return_value=mock_resp,
+            ),
+        ):
+            result = tool_fns["huggingface_run_inference"](model_id="some/repo", inputs="Hello")
+
+        assert "error" in result
+        assert result["error"] != "Model is loading"
+        assert "503" in result["error"]
+        assert "text/html" in result["error"]
+        assert "Service Unavailable" in result["error"]
+
+    def test_503_loading_payload_with_error_field(self, tool_fns):
+        """503 with `error: "model is loading"` is also treated as loading."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 503
+        mock_resp.headers = {"content-type": "application/json"}
+        mock_resp.json.return_value = {"error": "model is loading", "estimated_time": 12.0}
+        with (
+            patch.dict("os.environ", ENV),
+            patch(
+                "aden_tools.tools.huggingface_tool.huggingface_tool.httpx.post",
+                return_value=mock_resp,
+            ),
+        ):
+            result = tool_fns["huggingface_run_inference"](model_id="some/repo", inputs="Hello")
+
+        assert result["error"] == "Model is loading"
+        assert result["estimated_time"] == 12.0
+
+    def test_task_override_included_in_payload(self, tool_fns):
+        """`task` override must be sent in the JSON request payload."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {"content-type": "application/json"}
+        mock_resp.json.return_value = [{"generated_text": "ok"}]
+        with (
+            patch.dict("os.environ", ENV),
+            patch(
+                "aden_tools.tools.huggingface_tool.huggingface_tool.httpx.post",
+                return_value=mock_resp,
+            ) as mock_post,
+        ):
+            result = tool_fns["huggingface_run_inference"](
+                model_id="meta-llama/Llama-3.1-8B-Instruct",
+                inputs="Hello",
+                task="text-generation",
+            )
+
+        assert "output" in result
+        assert result["task"] == "text-generation"
+        sent_payload = mock_post.call_args.kwargs["json"]
+        assert sent_payload.get("task") == "text-generation"
+        assert sent_payload["inputs"] == "Hello"
+
+    def test_non_json_success_content_type(self, tool_fns):
+        """Success responses with a non-JSON content-type should be surfaced as a clear error."""
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {"content-type": "text/plain"}
+        mock_resp.text = "plain text body"
+        mock_resp.json.side_effect = ValueError("not json")
+        with (
+            patch.dict("os.environ", ENV),
+            patch(
+                "aden_tools.tools.huggingface_tool.huggingface_tool.httpx.post",
+                return_value=mock_resp,
+            ),
+        ):
+            result = tool_fns["huggingface_run_inference"](
+                model_id="meta-llama/Llama-3.1-8B-Instruct",
+                inputs="Hello",
+            )
+
+        assert "error" in result
+        assert "content-type" in result["error"]
+        assert "text/plain" in result["error"]
+
 
 class TestHuggingFaceRunEmbedding:
     def test_missing_token(self, tool_fns):

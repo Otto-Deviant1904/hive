@@ -60,6 +60,12 @@ def _get(path: str, token: str | None, params: dict[str, Any] | None = None) -> 
         return {"error": f"HuggingFace request failed: {e!s}"}
 
 
+def _is_json_response(resp: httpx.Response) -> bool:
+    """Check whether the response advertises a JSON content-type."""
+    content_type = resp.headers.get("content-type", "")
+    return content_type.startswith("application/json") or content_type.startswith("text/json")
+
+
 def _post(
     url: str,
     token: str | None,
@@ -82,7 +88,34 @@ def _post(
         if resp.status_code == 404:
             return {"error": f"Model not found: {url}"}
         if resp.status_code == 503:
-            body = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            content_type = resp.headers.get("content-type", "")
+            if not _is_json_response(resp):
+                return {
+                    "error": (
+                        f"HuggingFace Inference API returned 503 with unexpected content-type "
+                        f"'{content_type or 'unknown'}': {resp.text[:500]}"
+                    )
+                }
+            try:
+                body: Any = resp.json()
+            except Exception:
+                return {
+                    "error": (
+                        f"HuggingFace Inference API returned 503 with malformed JSON: "
+                        f"{resp.text[:500]}"
+                    )
+                }
+            # Only treat as "model is loading" when the payload indicates it;
+            # otherwise surface the body as a regular API error.
+            is_loading = isinstance(body, dict) and (
+                "estimated_time" in body or body.get("error") == "model is loading"
+            )
+            if not is_loading:
+                return {
+                    "error": (
+                        f"HuggingFace Inference API error 503: {resp.text[:500]}"
+                    )
+                }
             estimated = body.get("estimated_time", "unknown")
             return {
                 "error": "Model is loading",
@@ -91,6 +124,14 @@ def _post(
             }
         if resp.status_code != 200:
             return {"error": (f"HuggingFace Inference API error {resp.status_code}: {resp.text[:500]}")}
+        if not _is_json_response(resp):
+            content_type = resp.headers.get("content-type", "unknown")
+            return {
+                "error": (
+                    f"Unexpected response from HuggingFace Inference API "
+                    f"(content-type: {content_type}): {resp.text[:500]}"
+                )
+            }
         return resp.json()
     except httpx.TimeoutException:
         return {"error": "Inference request timed out. Try a smaller input or a faster model."}
@@ -401,6 +442,9 @@ def register_tools(
             return {"error": "inputs is required"}
 
         payload: dict[str, Any] = {"inputs": inputs}
+
+        if task:
+            payload["task"] = task
 
         if parameters:
             import json as _json
