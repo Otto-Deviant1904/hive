@@ -34,11 +34,11 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bgit\s+commit\b[^;&|\n]*--amend\b"), "may rewrite the last commit"),
     # File deletion — most specific patterns first so the warning is descriptive
     (
-        re.compile(r"(^|[;&|\n]\s*)rm\s+-[a-zA-Z]*[rR][a-zA-Z]*f|(^|[;&|\n]\s*)rm\s+-[a-zA-Z]*f[a-zA-Z]*[rR]"),
+        re.compile(r"(^|[;&|\n]\s*)(?:\S+\s+)*rm\s+-[a-zA-Z]*[rR][a-zA-Z]*f|(^|[;&|\n]\s*)(?:\S+\s+)*rm\s+-[a-zA-Z]*f[a-zA-Z]*[rR]"),
         "may recursively force-remove files",
     ),
-    (re.compile(r"(^|[;&|\n]\s*)rm\s+-[a-zA-Z]*[rR]"), "may recursively remove files"),
-    (re.compile(r"(^|[;&|\n]\s*)rm\s+-[a-zA-Z]*f"), "may force-remove files"),
+    (re.compile(r"(^|[;&|\n]\s*)(?:\S+\s+)*rm\s+-[a-zA-Z]*[rR]"), "may recursively remove files"),
+    (re.compile(r"(^|[;&|\n]\s*)(?:\S+\s+)*rm\s+-[a-zA-Z]*f"), "may force-remove files"),
     # Database
     (
         re.compile(r"\b(DROP|TRUNCATE)\s+(TABLE|DATABASE|SCHEMA)\b", re.IGNORECASE),
