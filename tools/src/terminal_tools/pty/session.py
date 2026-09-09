@@ -186,10 +186,12 @@ class PtySession:
                 pass
 
         deadline = time.monotonic() + grace_sec
+        reaped_status = None
         while time.monotonic() < deadline:
             try:
                 pid, status = os.waitpid(self._pid, os.WNOHANG)
                 if pid != 0:
+                    reaped_status = status
                     break
             except ChildProcessError:
                 break
@@ -218,11 +220,14 @@ class PtySession:
 
         # Final output = whatever's still in the ring.
         result = self._buf.tail(64 * 1024)
-        try:
-            _pid, status = os.waitpid(self._pid, os.WNOHANG)
-            exit_code = os.WEXITSTATUS(status) if os.WIFEXITED(status) else None
-        except ChildProcessError:
-            exit_code = None
+        if reaped_status is not None:
+            exit_code = os.WEXITSTATUS(reaped_status) if os.WIFEXITED(reaped_status) else None
+        else:
+            try:
+                _pid, status = os.waitpid(self._pid, os.WNOHANG)
+                exit_code = os.WEXITSTATUS(status) if os.WIFEXITED(status) and _pid != 0 else None
+            except ChildProcessError:
+                exit_code = None
         return {
             "exit_code": exit_code,
             "final_output": result.data.decode("utf-8", errors="replace"),
