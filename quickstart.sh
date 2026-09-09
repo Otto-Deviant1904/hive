@@ -93,7 +93,7 @@ prompt_choice() {
     done
 }
 
-clear
+clear 2>/dev/null || true
 echo ""
 echo -e "${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}${DIM}⬡${NC}${YELLOW}⬢${NC}"
 echo ""
@@ -260,10 +260,13 @@ echo -n "  Installing workspace packages... "
 cd "$SCRIPT_DIR"
 
 if [ -f "pyproject.toml" ]; then
-    if uv sync > /dev/null 2>&1; then
+    uv_output="$(uv sync 2>&1)"
+    if [ $? -eq 0 ]; then
         echo -e "${GREEN}  ✓ workspace packages installed${NC}"
     else
         echo -e "${RED}  ✗ workspace installation failed${NC}"
+        echo -e "${DIM}  Error output:${NC}"
+        echo "$uv_output" | sed 's/^/    /'
         exit 1
     fi
 else
@@ -2314,7 +2317,7 @@ fi
 # Success!
 # ============================================================
 
-clear
+clear 2>/dev/null || true
 echo ""
 echo -e "${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}${DIM}⬡${NC}${GREEN}⬢${NC}"
 echo ""
