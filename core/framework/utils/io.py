@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -30,7 +31,24 @@ def atomic_write(path: Path, mode: str = "w", encoding: str = "utf-8"):
             yield f
             f.flush()
             os.fsync(f.fileno())
-        tmp_path.replace(path)
+        # On Windows, a concurrent reader (AV scanner, indexer, another
+        # process) holding the destination open can make replace() fail with
+        # PermissionError. Retry with backoff — the standard mitigation.
+        _replace_with_retry(tmp_path, path)
     except BaseException:
         tmp_path.unlink(missing_ok=True)
         raise
+
+
+def _replace_with_retry(src: Path, dst: Path, attempts: int = 5, delay: float = 0.05) -> None:
+    """Retry os.replace to tolerate transient Windows sharing violations."""
+    last_exc = None
+    for _ in range(attempts):
+        try:
+            src.replace(dst)
+            return
+        except PermissionError as exc:
+            last_exc = exc
+            time.sleep(delay)
+    if last_exc:
+        raise last_exc
